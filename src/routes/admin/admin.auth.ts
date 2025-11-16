@@ -1,6 +1,7 @@
 import { Router } from "express";
 import user from "../../models/user";
 import { ApiError } from "../../utils/ApiError";
+import sendMail from "../../config/nodeMailer";
 
 const router = Router();
 router.get("/login", async (req, res) => {
@@ -50,9 +51,21 @@ router.get("/register", async (req, res) => {
   const User = new user(userCredentials);
   await User.save();
 
+  const sub = `${userName} , Thanks for registering to our website ...`;
+  const msg = `<h1 style="text-align: center; color : aqua">Hello ${userName}</h1>
+    <div style="text-align: center;">
+        <p>Wellcome to our familly , hope u will like this as much we want u to do ...</p>
+        <p>This is in the dev version , so obviously it will be much better in the future .. so be with us ❤️</p>
+        <p style="opacity: .2;"> This mail is generated Only for testing purposes ... </p>
+        <button style="background-color: cyan; border-radius: 12px; padding :3px; font-size: 16px ; padding-left: 5px; padding-right: 5px;">
+            💕
+        </button>
+        
+    </div>`;
+  sendMail(email, sub, msg);
+
   res.status(201).json({
     msg: "user has been registered successfully ...",
-    data: userCredentials,
   });
 });
 

@@ -1,7 +1,9 @@
 import { ApiError } from "../utils/ApiError";
 import user from "../models/user";
+import bcrypt from "bcrypt"
 import sendMail from "../config/nodeMailer";
 import { validationResult } from "express-validator";
+
 
 export const userRegister = async (req: any, res: any) => {
   const errors: any = validationResult(req);
@@ -19,10 +21,11 @@ export const userRegister = async (req: any, res: any) => {
   if (!email || !password) {
     throw new ApiError("Please enter both credentials", 400, true);
   }
+  const hashpass =await  bcrypt.hash(password, 10); 
   const userCredentials = {
     userName: userName,
     email: email,
-    password: password,
+    password: hashpass,
   };
   const User = new user(userCredentials);
   await User.save();
@@ -42,6 +45,7 @@ export const userRegister = async (req: any, res: any) => {
 
   res.status(201).json({
     msg: "user has been registered successfully ...",
+    hashpass,
   });
 };
 
@@ -61,7 +65,9 @@ export const userLogin = async (req: any, res: any) => {
     const userPass = foundUser.password;
 
     //* Check the pass ~
-    if (userPass == password) {
+    //using the hashed pass so compare it ...
+    const isValid = await bcrypt.compare(password, userPass);
+    if (isValid) {
       return res.status(200).json({
         msg: `Wellcome ${foundUser.userName}`,
       });

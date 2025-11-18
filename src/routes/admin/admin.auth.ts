@@ -1,6 +1,5 @@
 import { Router } from "express";
 import user from "../../models/user";
-import { ApiError } from "../../utils/ApiError";
 import requestValidator from "../../helpers/validation";
 import { userLogin, userRegister } from "../../controllers/userController";
 

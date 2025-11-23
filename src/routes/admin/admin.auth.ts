@@ -1,7 +1,11 @@
 import { Router } from "express";
 import user from "../../models/user";
 import requestValidator from "../../helpers/validation";
-import { userLogin, userRegister } from "../../controllers/userController";
+import {
+  mailVerification,
+  userLogin,
+  userRegister,
+} from "../../controllers/userController";
 
 const router = Router();
 router.get("/login", userLogin);
@@ -24,5 +28,7 @@ router.get("/view", async (req, res) => {
   const Users = await user.find();
   res.send({ Users });
 });
+
+router.get("/mail-verification", mailVerification);
 
 export default router;

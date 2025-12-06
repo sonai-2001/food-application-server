@@ -4,15 +4,9 @@ import user from "../../models/user";
 import {
   mailVerification,
   sendMailVerification,
-  userLogin,
-  userRegister,
 } from "../../controllers/userController";
-import { requestvalidator } from "../../helpers/validation";
 
 const router = Router();
-router.get("/login", userLogin);
-
-router.get("/register", requestvalidator, userRegister);
 
 //! CLEAR ALL THE ENTRY API ~
 router.delete("/delAll", async (req, res) => {

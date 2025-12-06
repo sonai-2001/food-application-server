@@ -17,10 +17,14 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  isVerified : {
-    type : Boolean,
-    default : false,
-  }
+  isVerified: {
+    type: Boolean,
+    default: false,
+  },
+  role: {
+    type: String,
+    default: "User",
+  },
 });
 
 //* saving the schema ~

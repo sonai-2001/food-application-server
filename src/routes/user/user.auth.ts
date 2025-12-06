@@ -1,12 +1,17 @@
+import { userMailVerification } from './../../controllers/userController';
 import { Router } from "express";
+import { requestvalidator } from "../../helpers/validation";
+import { userLogin, userRegister } from "../../controllers/userController";
 
 const router = Router();
 
-router.get("/login",(req,res)=>{
-    res.send("Hello from user login")
-});
+//!     USER LOGIN ROUTE ~
+router.get("/login", userLogin);
 
-router.get("/register",(req,res)=>{
-    res.send("Hello from user register")
-})
+// !    USER REGISTER ROUTE
+router.get("/register", requestvalidator, userRegister);
+
+//!     Sent the mail-verification at the time of the register ..
+router.get("/mail-verification", userMailVerification);
+
 export default router;

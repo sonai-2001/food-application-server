@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
 
-//* Creating a userSchema ~
+//* Creating a adminSchema ~
 
-const userSchema = new mongoose.Schema({
+const adminSchema = new mongoose.Schema({
   userName: {
     type: String,
     required: true,
@@ -23,10 +23,10 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    default: "User",
+    default: "Admin",
   },
 });
 
 //* saving the schema ~
-const User = mongoose.model("User", userSchema);
-export default User;
+const Admin = mongoose.model("Admin", adminSchema);
+export default Admin;

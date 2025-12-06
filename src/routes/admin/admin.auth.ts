@@ -1,16 +1,18 @@
+import { sendMailVerificator } from "./../../helpers/validation";
 import { Router } from "express";
 import user from "../../models/user";
-import requestValidator from "../../helpers/validation";
 import {
   mailVerification,
+  sendMailVerification,
   userLogin,
   userRegister,
 } from "../../controllers/userController";
+import { requestvalidator } from "../../helpers/validation";
 
 const router = Router();
 router.get("/login", userLogin);
 
-router.get("/register", requestValidator, userRegister);
+router.get("/register", requestvalidator, userRegister);
 
 //! CLEAR ALL THE ENTRY API ~
 router.delete("/delAll", async (req, res) => {
@@ -30,5 +32,12 @@ router.get("/view", async (req, res) => {
 });
 
 router.get("/mail-verification", mailVerification);
+
+// resend the mail verification ...
+router.get(
+  "/send-mail-verification",
+  sendMailVerificator,
+  sendMailVerification
+);
 
 export default router;

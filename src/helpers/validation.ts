@@ -1,6 +1,6 @@
 import { check } from "express-validator";
 
-const requestvalidator = [
+export const requestvalidator = [
   check("userName", "Please Enter a valid userName which has atlreast 5 charecters").not().isEmpty().isLength({
     min: 5,
   }),
@@ -12,4 +12,10 @@ const requestvalidator = [
   }),
 ];
 
-export default requestvalidator;
+export const sendMailVerificator = [
+  check("email", "Please enter a valid email ...").isEmail().normalizeEmail({
+    gmail_remove_dots: true,
+  }),
+];
+
+

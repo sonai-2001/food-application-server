@@ -30,7 +30,7 @@ export const userRegister = async (req: any, res: any) => {
   await User.save();
 
   const sub = `${userName} , Thanks for registering to our website ...`;
-  const msg = `h1 style="text-align: center; color : aqua">Hello ${userName}</h1>
+  const msg = `<h1 style="text-align: center; color : aqua">Hello ${userName}</h1>
     <div style="text-align: center;">
         <p>Wellcome to our familly , hope u will like this as much we want u to do ...</p>
         <p>This is in the dev version , so obviously it will be much better in the future .. so be with us ❤️</p>
@@ -131,6 +131,52 @@ export const mailVerification = async (req: any, res: any) => {
     });
   } catch (err: any) {
     console.log(err.message);
+    throw new ApiError(err.message, 500, false);
+  }
+};
+
+//! Resend the mailVerification mail ~
+export const sendMailVerification = async (req: any, res: any) => {
+  try {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      return res.send({
+        status: 1,
+        msg: "Please provide a valid email address ...",
+        errors: errors.array(),
+      });
+    }
+
+    const { email } = req.body;
+
+
+    const foundUser = await user.findOne({ email });
+
+    if (!foundUser) {
+      return res.status(404).json({
+        status: 0,
+        msg: "Please register first ...",
+      });
+    }
+
+    // if user is already verified ...
+    if (foundUser.isVerified) {
+      return res.send({
+        status: 1,
+        msg: `This email is already verified with userName ~ ${foundUser.userName}`,
+      });
+    }
+
+    const msg = `<p> Hi ${foundUser.userName}, Please <a href="http://127.0.0.1:3000/api/admin/auth/mail-verification?id=${foundUser?._id}">Verify</a> your mail ...</p>`;
+
+    sendMail(email, "Verification Mail", msg);
+
+    res.send({
+      status: 1,
+      msg: "Please check ur email , the verification mail has been sent ...",
+    });
+  } catch (err: any) {
     throw new ApiError(err.message, 500, false);
   }
 };

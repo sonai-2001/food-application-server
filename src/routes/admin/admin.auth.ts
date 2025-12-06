@@ -1,16 +1,23 @@
-import { sendMailVerificator } from "./../../helpers/validation";
-import { Router } from "express";
-import user from "../../models/user";
 import {
-  mailVerification,
-  sendMailVerification,
-} from "../../controllers/userController";
+  requestvalidator,
+  sendMailVerificator,
+} from "./../../helpers/validation";
+import { Router } from "express";
+import admin from "../../models/admin";
+import { sendMailVerification } from "../../controllers/userController";
+import {
+  adminMailVerification,
+  adminRegister,
+} from "../../controllers/adminController";
 
 const router = Router();
 
+//!   Register API ~
+router.get("/register", requestvalidator, adminRegister);
+
 //! CLEAR ALL THE ENTRY API ~
-router.delete("/delAll", async (req, res) => {
-  const delRes = await user.deleteMany();
+router.delete("/delAll", async (req: any, res: any) => {
+  const delRes = await admin.deleteMany();
 
   res.send({
     status: 1,
@@ -20,12 +27,12 @@ router.delete("/delAll", async (req, res) => {
 });
 
 //!   View All Entrys ...
-router.get("/view", async (req, res) => {
-  const Users = await user.find();
+router.get("/view", async (req: any, res: any) => {
+  const Users = await admin.find();
   res.send({ Users });
 });
 
-router.get("/mail-verification", mailVerification);
+router.get("/mail-verification", adminMailVerification);
 
 // resend the mail verification ...
 router.get(

@@ -1,12 +1,16 @@
 import mongoose from "mongoose";
 
-//* Creating a adminSchema ~
+//* Creating a sellerSchema ~
 
-const adminSchema = new mongoose.Schema({
-  userName: {
+const sellerSchema = new mongoose.Schema({
+  ownerName: {
     type: String,
     required: true,
     unique: true,
+  },
+  resturentName: {
+    type: String,
+    required: true,
   },
   email: {
     type: String,
@@ -23,10 +27,13 @@ const adminSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    default: "Admin",
+    default: "Seller",
   },
 });
 
+// TODO : later we need to add the address field ...
+
 //* saving the schema ~
-const Admin = mongoose.model("Admin", adminSchema);
-export default Admin;
+const Seller = mongoose.model("Seller", sellerSchema);
+export default Seller;
+

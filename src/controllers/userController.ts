@@ -35,7 +35,7 @@ export const userRegister = async (req: any, res: any) => {
         <p>Wellcome to our familly , hope u will like this as much we want u to do ...</p>
         <p>This is in the dev version , so obviously it will be much better in the future .. so be with us ❤️</p>
         <p style="opacity: .2;"> Please click the button to verify ur email ... </p>
-        <a href="http://127.0.0.1:3000/api/admin/auth/mail-verification?id=${User?._id}">
+        <a href="http://127.0.0.1:3000/api/user/auth/mail-verification?id=${User?._id}">
             <button style="background-color: cyan; border-radius: 12px; padding :3px; font-size: 16px ; padding-left: 5px; padding-right: 5px;">
             Verify
         </button>
@@ -99,7 +99,7 @@ export const userLogin = async (req: any, res: any) => {
 };
 
 //! Verify the email sent to the email at the time of the register ...
-export const mailVerification = async (req: any, res: any) => {
+export const userMailVerification = async (req: any, res: any) => {
   try {
     const { id } = req.query;
     if (id == undefined || id == null) {

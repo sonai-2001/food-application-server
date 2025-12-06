@@ -11,6 +11,8 @@ import {
   adminMailVerification,
   adminRegister,
 } from "../../controllers/adminController";
+import user from "../../models/user";
+import seller from "../../models/seller";
 
 const router = Router();
 
@@ -27,19 +29,25 @@ router.get("/login", adminLogin);
 
 //! CLEAR ALL THE ENTRY API ~
 router.delete("/delAll", async (req: any, res: any) => {
-  const delRes = await admin.deleteMany();
+  const delResAdmin = await admin.deleteMany();
+  const delResUser = await user.deleteMany();
+  const delResSeller = await seller.deleteMany();
 
   res.send({
     status: 1,
     msg: "All users has been deleted successfully ...",
-    delRes,
+    delResAdmin,
+    delResUser,
+    delResSeller,
   });
 });
 
 //!   View All Entrys ...
 router.get("/view", async (req: any, res: any) => {
   const Admins = await admin.find();
-  res.send({ Admins });
+  const Users = await user.find();
+  const Seller = await seller.find();
+  res.send({ Admins, Users, Seller });
 });
 
 //!   Mail-verificaion at the time of register ...

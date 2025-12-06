@@ -52,3 +52,30 @@ export const adminValidator = (
     return next(new ApiError("Server error in adminValidator", 500, false));
   }
 };
+
+export const sellerRegisterValidator = [
+  check(
+    "ownerName",
+    "Please Enter a valid owner name which has atlreast 5 charecters"
+  )
+    .not()
+    .isEmpty()
+    .isLength({
+      min: 5,
+    }),
+  check(
+    "resturentName",
+    "Please Enter a valid resturent name which has atlreast 5 charecters"
+  )
+    .not()
+    .isEmpty()
+    .isLength({
+      min: 5,
+    }),
+  check("email", "Please enter a valid email ...").isEmail().normalizeEmail({
+    gmail_remove_dots: true,
+  }),
+  check("password", "The password must be greater than 4 digits").isLength({
+    min: 5,
+  }),
+];

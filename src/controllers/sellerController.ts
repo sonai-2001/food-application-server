@@ -49,6 +49,57 @@ export const sellerRegister = async (req: Request, res: Response) => {
   });
 };
 
+//!   Seller Login API ~
+export const sellerLogin = async (req: Request, res: Response) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      throw new ApiError("Please enter both credentials", 400, true);
+    }
+    const foundSeller = await seller.findOne({ email: email });
+
+    if (!foundSeller) {
+      throw new ApiError("Please register first ...", 400, true);
+    }
+
+    //* if user found get the pass and match , then return response
+    const userPass = foundSeller.password;
+
+    //* Check the pass ~
+    //using the hashed pass so compare it ...
+    const isValid = await bcrypt.compare(password, userPass);
+    if (isValid) {
+      res.status(200).json({
+        msg: `Wellcome ${foundSeller.resturentName}`,
+      });
+
+      //* send another email to verify the login using the emial link...
+      const msg = `<h1 style="text-align: center; color : aqua">Hello ${foundSeller?.ownerName}</h1>
+      <div style="text-align: center;">
+        <p>This email is sent to verify ur login to ur account linked with this email ...</p>
+        <p>This is in the dev version , so obviously it will be much better in the future .. so be with us ❤️</p>
+        <p style="opacity: .2;"> This mail is generated one ...</p>
+        <button style="background-color: cyan; border-radius: 12px; padding :3px; font-size: 16px ; padding-left: 5px; padding-right: 5px;">
+            💕
+        </button>
+        
+      </div>`;
+
+      sendMail(email, "Verification Email", msg);
+    } else {
+      res.send({
+        status: 0,
+        msg: "Please check ur password ...",
+      });
+    }
+  } catch (err: any) {
+    res.status(500).json({
+      msg: "There is some problem in login ...",
+      error: err.message,
+    });
+  }
+};
+
 
 //! Verify the email sent to the email at the time of the register ...
 export const sellerMailVerification = async (req: Request, res: Response) => {

@@ -50,6 +50,57 @@ export const adminRegister = async (req: any, res: any) => {
   });
 };
 
+//!     Login Api ~
+export const adminLogin = async (req:any, res:any) => {
+    try {
+      const { email, password } = req.body;
+      if (!email || !password) {
+        throw new ApiError("Please enter both credentials", 400, true);
+      }
+      const foundAdmin = await admin.findOne({ email: email });
+
+      if (!foundAdmin) {
+        throw new ApiError("Please register first ...", 400, true);
+      }
+
+      //* if admin found get the pass and match , then return response
+      const adminPass = foundAdmin.password;
+
+      //* Check the pass ~
+      //using the hashed pass so compare it ...
+      const isValid = await bcrypt.compare(password, adminPass);
+      if (isValid) {
+        res.status(200).json({
+          msg: `Wellcome ${foundAdmin.userName}`,
+        });
+
+        //* send another email to verify the login using the emial link...
+        const msg = `<h1 style="text-align: center; color : aqua">Hello ${foundAdmin?.userName}</h1>
+      <div style="text-align: center;">
+        <p>This email is sent to verify ur login to ur account linked with this email ...</p>
+        <p>This is in the dev version , so obviously it will be much better in the future .. so be with us ❤️</p>
+        <p style="opacity: .2;"> This mail is generated one ...</p>
+        <button style="background-color: cyan; border-radius: 12px; padding :3px; font-size: 16px ; padding-left: 5px; padding-right: 5px;">
+            💕
+        </button>
+        
+      </div>`;
+
+        sendMail(email, "Verification Email", msg);
+      } else {
+        res.send({
+          status: 0,
+          msg: "Please check ur password ...",
+        });
+      }
+    } catch (err: any) {
+      res.status(500).json({
+        msg: "There is some problem in login ...",
+        error: err.message,
+      });
+    }
+}
+
 //! Verify the email sent to the email at the time of the register ...
 export const adminMailVerification = async (req: any, res: any) => {
   try {

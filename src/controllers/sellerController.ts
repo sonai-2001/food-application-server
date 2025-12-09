@@ -1,9 +1,11 @@
-import  bcrypt  from 'bcrypt';
+import bcrypt from "bcrypt";
 import { validationResult } from "express-validator";
 import sendMail from "../config/nodeMailer";
 import { ApiError } from "../utils/ApiError";
-import seller from '../models/seller';
-import { Request, Response } from 'express';
+import seller from "../models/seller";
+import { Request, Response } from "express";
+import food from "../models/food";
+import user from "../models/user";
 
 export const sellerRegister = async (req: Request, res: Response) => {
   const errors: any = validationResult(req);
@@ -16,14 +18,14 @@ export const sellerRegister = async (req: Request, res: Response) => {
     throw new ApiError(errorMessages, 400, true);
   }
 
-  const { ownerName,resturentName, email, password } = req.body;
+  const { ownerName, resturentName, email, password } = req.body;
   if (!email || !password) {
     throw new ApiError("Please enter both credentials", 400, true);
   }
   const hashpass = await bcrypt.hash(password, 10);
   const userCredentials = {
     ownerName: ownerName,
-    resturentName:resturentName,
+    resturentName: resturentName,
     email: email,
     password: hashpass,
   };
@@ -100,7 +102,6 @@ export const sellerLogin = async (req: Request, res: Response) => {
   }
 };
 
-
 //! Verify the email sent to the email at the time of the register ...
 export const sellerMailVerification = async (req: Request, res: Response) => {
   try {
@@ -135,5 +136,72 @@ export const sellerMailVerification = async (req: Request, res: Response) => {
   } catch (err: any) {
     console.log(err.message);
     throw new ApiError(err.message, 500, false);
+  }
+};
+
+//!     ADD FOOD API ~
+export const addFood = async (req: Request, res: Response) => {
+  const errors: any = validationResult(req);
+
+  if (!errors.isEmpty()) {
+    const errorMessages = errors
+      .array()
+      .map((e: any) => e.msg)
+      .join(", ");
+    throw new ApiError(errorMessages, 400, true);
+  }
+  const { email, password, foodName, price } = req.body;
+  if (!email || !password) {
+    throw new ApiError("Please enter both credentials", 400, true);
+  }
+  const foundSeller = await seller.findOne({ email: email });
+
+  if (!foundSeller) {
+    const foundUser = await user.findOne({ email });
+    if (!foundUser)
+      throw new ApiError(
+        "As u are a user You need to be a seller to add a food item",
+        401,
+        true
+      );
+    else {
+      throw new ApiError("Please register first as a seller ...", 400, true);
+    }
+  }
+
+  //* if user found get the pass and match , then return response
+  const userPass = foundSeller.password;
+
+  //* Check the pass ~
+  //using the hashed pass so compare it ...
+  const isValid = await bcrypt.compare(password, userPass);
+
+  if (isValid) {
+    //* only off for the testing purpose only ...
+    // if (!foundSeller.isVerified) {
+    //   throw new ApiError(
+    //     "Please verify urself first to add the food item ...",
+    //     401,
+    //     true
+    //   );
+    // }
+
+    if (!foodName || !price) {
+      throw new ApiError(
+        "Please enter the Food Name and the Price also ..",
+        400,
+        true
+      );
+    }
+    const resturentName = foundSeller.resturentName;
+    const Food = new food({ foodName, price, resturentName });
+    await Food.save();
+
+    res.send({
+      status: 1,
+      msg: "The food item has been saved successfully ...",
+    });
+  } else {
+    throw new ApiError("Please check ur credentials ...", 404, true);
   }
 };

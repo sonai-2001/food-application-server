@@ -14,6 +14,6 @@ router.get("/mail-verification", sellerMailVerification);
 router.get("/login", sellerLogin);
 
 //!     ADD FOOD ITEMS ~
-router.post("/add-food/:resturentName", foodValidator,addFood);
+router.post("/add-food", foodValidator,addFood);
 
 export default router;

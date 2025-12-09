@@ -5,6 +5,7 @@ import { ApiError } from "../utils/ApiError";
 import seller from "../models/seller";
 import { Request, Response } from "express";
 import food from "../models/food";
+import { log } from "console";
 
 export const sellerRegister = async (req: Request, res: Response) => {
   const errors: any = validationResult(req);
@@ -149,40 +150,49 @@ export const addFood = async (req: Request, res: Response) => {
       .join(", ");
     throw new ApiError(errorMessages, 400, true);
   }
-  const { resturentName } = req.params;
-  const { foodName, price } = req.body;
-  
-  console.log(resturentName);
-  if (!resturentName) {
-    throw new ApiError("Not Resturant found ...", 404, true);
+  const { email, password, foodName, price } = req.body;
+  if (!email || !password) {
+    throw new ApiError("Please enter both credentials", 400, true);
   }
-  const foundSeller = await seller.findOne({ resturentName: resturentName });
+  const foundSeller = await seller.findOne({ email: email });
 
   if (!foundSeller) {
-    throw new ApiError("This resturant doesnt exits ...", 404, true);
+    throw new ApiError("Please register first as a seller ...", 400, true);
   }
 
-  //* only off for the testing purpose only ...
-  // if (!foundSeller.isVerified) {
-  //   throw new ApiError(
-  //     "Please verify urself first to add the food item ...",
-  //     401,
-  //     true
-  //   );
-  // }
+  //* if user found get the pass and match , then return response
+  const userPass = foundSeller.password;
 
-  if (!foodName || !price) {
-    throw new ApiError(
-      "Please enter the Food Name and the Price also ..",
-      400,
-      true
-    );
+  //* Check the pass ~
+  //using the hashed pass so compare it ...
+  const isValid = await bcrypt.compare(password, userPass);
+
+  if (isValid) {
+    //* only off for the testing purpose only ...
+    // if (!foundSeller.isVerified) {
+    //   throw new ApiError(
+    //     "Please verify urself first to add the food item ...",
+    //     401,
+    //     true
+    //   );
+    // }
+
+    if (!foodName || !price) {
+      throw new ApiError(
+        "Please enter the Food Name and the Price also ..",
+        400,
+        true
+      );
+    }
+    const resturentName = foundSeller.resturentName;
+    const Food = new food({ foodName, price, resturentName });
+    await Food.save();
+
+    res.send({
+      status: 1,
+      msg: "The food item has been saved successfully ...",
+    });
+  } else {
+    throw new ApiError("Please check ur credentials ...", 404, true);
   }
-  const Food = new food({foodName, price,  resturentName });
-  await Food.save();
-
-  res.send({
-    status: 1,
-    msg: "The food item has been saved successfully ...",
-  });
 };

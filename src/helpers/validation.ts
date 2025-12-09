@@ -78,6 +78,12 @@ export const sellerRegisterValidator = [
 ];
 
 export const foodValidator = [
+  check("email", "Please enter a valid email ...").isEmail().normalizeEmail({
+    gmail_remove_dots: true,
+  }),
+  check("password", "The password must be greater than 4 digits").isLength({
+    min: 5,
+  }),
   check(
     "foodName",
     "Please enter a foodName greater than or equal to 3 letters..."
@@ -85,13 +91,4 @@ export const foodValidator = [
     .isLength({ min: 3 })
     .not()
     .isEmpty(),
-  check(
-    "resturentName",
-    "Please Enter a valid resturent name which has atlreast 5 charecters"
-  )
-    .not()
-    .isEmpty()
-    .isLength({
-      min: 5,
-    }),
 ];

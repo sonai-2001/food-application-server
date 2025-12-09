@@ -1,9 +1,10 @@
-import  bcrypt  from 'bcrypt';
+import bcrypt from "bcrypt";
 import { validationResult } from "express-validator";
 import sendMail from "../config/nodeMailer";
 import { ApiError } from "../utils/ApiError";
-import seller from '../models/seller';
-import { Request, Response } from 'express';
+import seller from "../models/seller";
+import { Request, Response } from "express";
+import food from "../models/food";
 
 export const sellerRegister = async (req: Request, res: Response) => {
   const errors: any = validationResult(req);
@@ -16,14 +17,14 @@ export const sellerRegister = async (req: Request, res: Response) => {
     throw new ApiError(errorMessages, 400, true);
   }
 
-  const { ownerName,resturentName, email, password } = req.body;
+  const { ownerName, resturentName, email, password } = req.body;
   if (!email || !password) {
     throw new ApiError("Please enter both credentials", 400, true);
   }
   const hashpass = await bcrypt.hash(password, 10);
   const userCredentials = {
     ownerName: ownerName,
-    resturentName:resturentName,
+    resturentName: resturentName,
     email: email,
     password: hashpass,
   };
@@ -100,7 +101,6 @@ export const sellerLogin = async (req: Request, res: Response) => {
   }
 };
 
-
 //! Verify the email sent to the email at the time of the register ...
 export const sellerMailVerification = async (req: Request, res: Response) => {
   try {
@@ -136,4 +136,53 @@ export const sellerMailVerification = async (req: Request, res: Response) => {
     console.log(err.message);
     throw new ApiError(err.message, 500, false);
   }
+};
+
+//!     ADD FOOD API ~
+export const addFood = async (req: Request, res: Response) => {
+  const errors: any = validationResult(req);
+
+  if (!errors.isEmpty()) {
+    const errorMessages = errors
+      .array()
+      .map((e: any) => e.msg)
+      .join(", ");
+    throw new ApiError(errorMessages, 400, true);
+  }
+  const { resturentName } = req.params;
+  const { foodName, price } = req.body;
+  
+  console.log(resturentName);
+  if (!resturentName) {
+    throw new ApiError("Not Resturant found ...", 404, true);
+  }
+  const foundSeller = await seller.findOne({ resturentName: resturentName });
+
+  if (!foundSeller) {
+    throw new ApiError("This resturant doesnt exits ...", 404, true);
+  }
+
+  //* only off for the testing purpose only ...
+  // if (!foundSeller.isVerified) {
+  //   throw new ApiError(
+  //     "Please verify urself first to add the food item ...",
+  //     401,
+  //     true
+  //   );
+  // }
+
+  if (!foodName || !price) {
+    throw new ApiError(
+      "Please enter the Food Name and the Price also ..",
+      400,
+      true
+    );
+  }
+  const Food = new food({foodName, price,  resturentName });
+  await Food.save();
+
+  res.send({
+    status: 1,
+    msg: "The food item has been saved successfully ...",
+  });
 };

@@ -40,14 +40,11 @@ export const adminValidator = (
     if (!userName || !password) {
       return next(new ApiError("You are not authorized ...", 401, true));
     }
-    
+
     if (userName === adminUserName && password === adminPassword) {
       return next();
     }
-    return next(
-      new ApiError("Please check ur credentials ...", 400, true)
-    );
-
+    return next(new ApiError("Please check ur credentials ...", 400, true));
   } catch (err: any) {
     return next(new ApiError("Server error in adminValidator", 500, false));
   }
@@ -78,4 +75,23 @@ export const sellerRegisterValidator = [
   check("password", "The password must be greater than 4 digits").isLength({
     min: 5,
   }),
+];
+
+export const foodValidator = [
+  check(
+    "foodName",
+    "Please enter a foodName greater than or equal to 3 letters..."
+  )
+    .isLength({ min: 3 })
+    .not()
+    .isEmpty(),
+  check(
+    "resturentName",
+    "Please Enter a valid resturent name which has atlreast 5 charecters"
+  )
+    .not()
+    .isEmpty()
+    .isLength({
+      min: 5,
+    }),
 ];

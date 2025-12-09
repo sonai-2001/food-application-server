@@ -13,6 +13,7 @@ import {
 } from "../../controllers/adminController";
 import user from "../../models/user";
 import seller from "../../models/seller";
+import food from "../../models/food";
 
 const router = Router();
 
@@ -47,7 +48,8 @@ router.get("/view", async (req: any, res: any) => {
   const Admins = await admin.find();
   const Users = await user.find();
   const Seller = await seller.find();
-  res.send({ Admins, Users, Seller });
+  const Food = await food.find();
+  res.send({ Admins, Users, Seller , Food});
 });
 
 //!   Mail-verificaion at the time of register ...

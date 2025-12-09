@@ -5,7 +5,7 @@ import { ApiError } from "../utils/ApiError";
 import seller from "../models/seller";
 import { Request, Response } from "express";
 import food from "../models/food";
-import { log } from "console";
+import user from "../models/user";
 
 export const sellerRegister = async (req: Request, res: Response) => {
   const errors: any = validationResult(req);
@@ -157,7 +157,16 @@ export const addFood = async (req: Request, res: Response) => {
   const foundSeller = await seller.findOne({ email: email });
 
   if (!foundSeller) {
-    throw new ApiError("Please register first as a seller ...", 400, true);
+    const foundUser = await user.findOne({ email });
+    if (!foundUser)
+      throw new ApiError(
+        "As u are a user You need to be a seller to add a food item",
+        401,
+        true
+      );
+    else {
+      throw new ApiError("Please register first as a seller ...", 400, true);
+    }
   }
 
   //* if user found get the pass and match , then return response

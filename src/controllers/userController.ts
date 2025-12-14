@@ -3,6 +3,10 @@ import user from "../models/user";
 import bcrypt from "bcrypt";
 import sendMail from "../config/nodeMailer";
 import { validationResult } from "express-validator";
+import { Request, Response } from "express";
+import User from "../models/user";
+import Seller from "../models/seller";
+import Admin from "../models/admin";
 
 export const userRegister = async (req: any, res: any) => {
   const errors: any = validationResult(req);
@@ -150,7 +154,6 @@ export const sendMailVerification = async (req: any, res: any) => {
 
     const { email } = req.body;
 
-
     const foundUser = await user.findOne({ email });
 
     if (!foundUser) {
@@ -180,3 +183,4 @@ export const sendMailVerification = async (req: any, res: any) => {
     throw new ApiError(err.message, 500, false);
   }
 };
+

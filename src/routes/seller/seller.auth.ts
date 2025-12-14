@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { sellerRegisterValidator } from "../../helpers/validation";
-import { sellerLogin, sellerMailVerification, sellerRegister } from "../../controllers/sellerController";
+import { foodValidator, sellerRegisterValidator } from "../../helpers/validation";
+import { addFood, sellerLogin, sellerMailVerification, sellerRegister } from "../../controllers/sellerController";
 
 const router = Router();
 
@@ -12,5 +12,8 @@ router.get("/mail-verification", sellerMailVerification);
 
 //!     USER LOGIN ROUTE ~
 router.get("/login", sellerLogin);
+
+//!     ADD FOOD ITEMS ~
+router.post("/add-food", foodValidator,addFood);
 
 export default router;

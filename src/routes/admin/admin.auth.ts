@@ -13,6 +13,7 @@ import {
 } from "../../controllers/adminController";
 import user from "../../models/user";
 import seller from "../../models/seller";
+import food from "../../models/food";
 
 const router = Router();
 
@@ -32,6 +33,7 @@ router.delete("/delAll", async (req: any, res: any) => {
   const delResAdmin = await admin.deleteMany();
   const delResUser = await user.deleteMany();
   const delResSeller = await seller.deleteMany();
+  const delResFood = await food.deleteMany();
 
   res.send({
     status: 1,
@@ -39,6 +41,7 @@ router.delete("/delAll", async (req: any, res: any) => {
     delResAdmin,
     delResUser,
     delResSeller,
+    delResFood,
   });
 });
 
@@ -47,7 +50,8 @@ router.get("/view", async (req: any, res: any) => {
   const Admins = await admin.find();
   const Users = await user.find();
   const Seller = await seller.find();
-  res.send({ Admins, Users, Seller });
+  const Food = await food.find();
+  res.send({ Admins, Users, Seller, Food });
 });
 
 //!   Mail-verificaion at the time of register ...

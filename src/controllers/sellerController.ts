@@ -158,7 +158,7 @@ export const addFood = async (req: Request, res: Response) => {
 
   if (!foundSeller) {
     const foundUser = await user.findOne({ email });
-    if (!foundUser)
+    if (foundUser)
       throw new ApiError(
         "As u are a user You need to be a seller to add a food item",
         401,

@@ -10,15 +10,17 @@ import {
   adminLogin,
   adminMailVerification,
   adminRegister,
+  viewAll,
 } from "../../controllers/adminController";
 import user from "../../models/user";
 import seller from "../../models/seller";
 import food from "../../models/food";
+import { authMiddleware } from "../../middlewares/auth.middleware";
 
 const router = Router();
 
 //!   Register API ~
-router.get(
+router.post(
   "/register",
   adminValidator, // first protect
   ...requestvalidator, // spread the validator array
@@ -26,7 +28,7 @@ router.get(
 );
 
 //!   Login API ~
-router.get("/login", adminLogin);
+router.post("/login",requestvalidator ,adminLogin);
 
 //! CLEAR ALL THE ENTRY API ~
 router.delete("/delAll", async (req: any, res: any) => {
@@ -46,13 +48,7 @@ router.delete("/delAll", async (req: any, res: any) => {
 });
 
 //!   View All Entrys ...
-router.get("/view", async (req: any, res: any) => {
-  const Admins = await admin.find();
-  const Users = await user.find();
-  const Seller = await seller.find();
-  const Food = await food.find();
-  res.send({ Admins, Users, Seller, Food });
-});
+router.get("/view",authMiddleware,viewAll);
 
 //!   Mail-verificaion at the time of register ...
 router.get("/mail-verification", adminMailVerification);

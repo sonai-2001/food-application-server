@@ -151,7 +151,13 @@ export const adminMailVerification = async (req: Request, res: Response) => {
 //!   To view all the data of any user
 export const viewAll = async (req: Request, res: Response) => {
   try {
-    const  role  = req.query.role as string | undefined;
+    //* ADMIN-ONLY CHECK
+    if (req.user?.role !== "admin") {
+      return res.status(403).json({
+        msg: "Admins only",
+      });
+    }
+    const role = req.query.role as string | undefined;
 
     let data;
 

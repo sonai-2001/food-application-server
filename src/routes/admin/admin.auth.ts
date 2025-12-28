@@ -15,11 +15,12 @@ import {
 import user from "../../models/user";
 import seller from "../../models/seller";
 import food from "../../models/food";
+import { authMiddleware } from "../../middlewares/auth.middleware";
 
 const router = Router();
 
 //!   Register API ~
-router.get(
+router.post(
   "/register",
   adminValidator, // first protect
   ...requestvalidator, // spread the validator array
@@ -27,7 +28,7 @@ router.get(
 );
 
 //!   Login API ~
-router.get("/login",requestvalidator ,adminLogin);
+router.post("/login",requestvalidator ,adminLogin);
 
 //! CLEAR ALL THE ENTRY API ~
 router.delete("/delAll", async (req: any, res: any) => {
@@ -47,7 +48,7 @@ router.delete("/delAll", async (req: any, res: any) => {
 });
 
 //!   View All Entrys ...
-router.get("/view",viewAll);
+router.get("/view",authMiddleware,viewAll);
 
 //!   Mail-verificaion at the time of register ...
 router.get("/mail-verification", adminMailVerification);

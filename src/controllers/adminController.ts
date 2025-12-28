@@ -71,7 +71,10 @@ export const adminLogin = async (req: Request, res: Response) => {
     if (!email || !password) {
       throw new ApiError("Please enter both credentials", 400, true);
     }
-    const foundAdmin = await User.findOne({ email: email.toLowerCase(), role: "admin" });
+    const foundAdmin = await User.findOne({
+      email: email.toLowerCase(),
+      role: "admin",
+    });
 
     if (!foundAdmin) {
       throw new ApiError("Please register first ...", 400, true);
@@ -157,7 +160,7 @@ export const adminMailVerification = async (req: Request, res: Response) => {
     foundAdmin.isVerified = true;
     await foundAdmin.save();
     return res.status(200).json({
-      status : 1,
+      status: 1,
       message: "Mail has been verified successfully ....",
     });
   } catch (err: any) {
@@ -182,10 +185,10 @@ export const viewAll = async (req: Request, res: Response) => {
       data = await User.find({ role: "user" }).select("-password");
     } else if (role === "seller") {
       data = await User.find({ role: "seller" }).select("-password");
+    } else if (role === "admin") {
+      data = await User.find({ role: "admin" }).select("-password");
     } else {
-      data = {
-        admin: await User.find().select("-password"),
-      };
+      data = await User.find().select("-password");
     }
 
     return res.status(200).json({

@@ -2,10 +2,9 @@ import bcrypt from "bcrypt";
 import { validationResult } from "express-validator";
 import sendMail from "../config/nodeMailer";
 import { ApiError } from "../utils/ApiError";
-import seller from "../models/seller";
 import { Request, Response } from "express";
 import food from "../models/food";
-import user from "../models/user";
+import User from "../models/user";
 
 export const sellerRegister = async (req: Request, res: Response) => {
   const errors: any = validationResult(req);
@@ -22,14 +21,28 @@ export const sellerRegister = async (req: Request, res: Response) => {
   if (!email || !password) {
     throw new ApiError("Please enter both credentials", 400, true);
   }
+
+  //* check existing seller ~
+  const existingSeller = await User.findOne({
+    email: email.toLowerCase(),
+    role: "seller",
+  });
+
+  if (existingSeller) {
+    return res.status(400).json({
+      status: 0,
+      msg: "Seller already exist with this email ... ",
+    });
+  }
   const hashpass = await bcrypt.hash(password, 10);
   const userCredentials = {
-    ownerName: ownerName,
-    resturentName: resturentName,
-    email: email,
+    ownerName,
+    resturentName,
+    email: email.toLowerCase(),
     password: hashpass,
+    role: "seller",
   };
-  const Seller = new seller(userCredentials);
+  const Seller = new User(userCredentials);
   await Seller.save();
 
   const sub = `${resturentName} , Thanks for registering to our website ...`;
@@ -58,7 +71,7 @@ export const sellerLogin = async (req: Request, res: Response) => {
     if (!email || !password) {
       throw new ApiError("Please enter both credentials", 400, true);
     }
-    const foundSeller = await seller.findOne({ email: email });
+    const foundSeller = await User.findOne({ email: email });
 
     if (!foundSeller) {
       throw new ApiError("Please register first ...", 400, true);
@@ -111,7 +124,7 @@ export const sellerMailVerification = async (req: Request, res: Response) => {
     }
 
     // check the user ...
-    const foundSeller = await seller.findOne({ _id: id });
+    const foundSeller = await User.findOne({ _id: id });
     if (!foundSeller) {
       throw new ApiError(
         "Seller Not Found , Please register first ...",
@@ -154,10 +167,10 @@ export const addFood = async (req: Request, res: Response) => {
   if (!email || !password) {
     throw new ApiError("Please enter both credentials", 400, true);
   }
-  const foundSeller = await seller.findOne({ email: email });
+  const foundSeller = await User.findOne({ email: email });
 
   if (!foundSeller) {
-    const foundUser = await user.findOne({ email });
+    const foundUser = await User.findOne({ email });
     if (foundUser)
       throw new ApiError(
         "As u are a user You need to be a seller to add a food item",

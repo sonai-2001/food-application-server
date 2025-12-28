@@ -4,7 +4,6 @@ import { ApiError } from "../utils/ApiError";
 import { validationResult } from "express-validator";
 import User from "../models/user";
 import { Request, Response } from "express";
-import Seller from "../models/seller";
 import {
   generateAccessToken,
   generateRefreshToken,
@@ -26,13 +25,13 @@ export const adminRegister = async (req: Request, res: Response) => {
     }
 
     const { userName, email, password } = req.body;
-    if (!email || !password) {
+    if (!email || !password || !userName) {
       throw new ApiError("Please enter both credentials", 400, true);
     }
     const hashpass = await bcrypt.hash(password, 10);
     const userCredentials = {
       userName: userName,
-      email: email,
+      email: email.toLowerCase(),
       password: hashpass,
       role: "admin",
     };
@@ -72,7 +71,7 @@ export const adminLogin = async (req: Request, res: Response) => {
     if (!email || !password) {
       throw new ApiError("Please enter both credentials", 400, true);
     }
-    const foundAdmin = await User.findOne({ email: email, role: "admin" });
+    const foundAdmin = await User.findOne({ email: email.toLowerCase(), role: "admin" });
 
     if (!foundAdmin) {
       throw new ApiError("Please register first ...", 400, true);
@@ -126,12 +125,19 @@ export const adminLogin = async (req: Request, res: Response) => {
 export const adminMailVerification = async (req: Request, res: Response) => {
   try {
     const { id } = req.query;
-    if (id == undefined || id == null) {
-      throw new ApiError("Not found ...", 404, true);
+    if (!id || typeof id !== "string") {
+      return res.status(400).json({
+        status: 0,
+        msg: "Invalid or missing verification id",
+      });
     }
 
     // check the user ...
-    const foundAdmin = await User.findById(id);
+    const foundAdmin = await User.findOne({
+      _id: id,
+      role: "admin",
+    });
+
     if (!foundAdmin) {
       throw new ApiError(
         "User Not Found , Please register first ...",
@@ -140,7 +146,7 @@ export const adminMailVerification = async (req: Request, res: Response) => {
       );
     }
 
-    //user is already verified ...
+    //if user is already verified ...
     if (foundAdmin.isVerified) {
       return res.send({
         message: "Your mail has been already verified ...",
@@ -150,11 +156,11 @@ export const adminMailVerification = async (req: Request, res: Response) => {
     // user found then show verified and save ...
     foundAdmin.isVerified = true;
     await foundAdmin.save();
-    return res.send({
+    return res.status(200).json({
+      status : 1,
       message: "Mail has been verified successfully ....",
     });
   } catch (err: any) {
-    console.log(err.message);
     throw new ApiError(err.message, 500, false);
   }
 };
@@ -173,14 +179,12 @@ export const viewAll = async (req: Request, res: Response) => {
     let data;
 
     if (role === "user") {
-      data = await User.find().select("-password");
+      data = await User.find({ role: "user" }).select("-password");
     } else if (role === "seller") {
-      data = await Seller.find().select("-password");
+      data = await User.find({ role: "seller" }).select("-password");
     } else {
       data = {
         admin: await User.find().select("-password"),
-        users: await User.find().select("-password"),
-        sellers: await Seller.find().select("-password"),
       };
     }
 

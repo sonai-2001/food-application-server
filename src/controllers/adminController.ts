@@ -7,9 +7,10 @@ import User from "../models/user";
 import { Request, Response } from "express";
 import Seller from "../models/seller";
 import Admin from "../models/admin";
+import { generateAccessToken, generateRefreshToken, JwtPayload } from "../utils/jwt";
 
 //!     REGISTER API ~
-export const adminRegister = async (req: any, res: any) => {
+export const adminRegister = async (req: Request, res: Response) => {
   const errors: any = validationResult(req);
 
   if (!errors.isEmpty()) {
@@ -31,8 +32,8 @@ export const adminRegister = async (req: any, res: any) => {
     email: email,
     password: hashpass,
   };
-  const Admin = new admin(userCredentials);
-  await Admin.save();
+  const newAdmin = new admin(userCredentials);
+  await newAdmin.save();
 
   const sub = `${userName} , Admin wellcome to our website ...`;
   const msg = `<h1 style="text-align: center; color : aqua">Hello ${userName}</h1>
@@ -40,7 +41,7 @@ export const adminRegister = async (req: any, res: any) => {
         <p>Wellcome to our familly , hope u will like this as much we want u to do ...</p>
         <p>This is in the dev version , so obviously it will be much better in the future .. so be with us ❤️</p>
         <p style="opacity: .2;"> Please click the button to verify ur email ... </p>
-        <a href="http://127.0.0.1:3000/api/admin/auth/mail-verification?id=${Admin?._id}">
+        <a href="http://127.0.0.1:3000/api/admin/auth/mail-verification?id=${newAdmin?._id}">
             <button style="background-color: cyan; border-radius: 12px; padding :3px; font-size: 16px ; padding-left: 5px; padding-right: 5px;">
             Verify
         </button>
@@ -54,7 +55,7 @@ export const adminRegister = async (req: any, res: any) => {
 };
 
 //!     Login Api ~
-export const adminLogin = async (req: any, res: any) => {
+export const adminLogin = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) {
@@ -66,36 +67,42 @@ export const adminLogin = async (req: any, res: any) => {
       throw new ApiError("Please register first ...", 400, true);
     }
 
-    //* if admin found get the pass and match , then return response
-    const adminPass = foundAdmin.password;
-
-    //* Check the pass ~
     //using the hashed pass so compare it ...
-    const isValid = await bcrypt.compare(password, adminPass);
-    if (isValid) {
-      res.status(200).json({
-        msg: `Wellcome ${foundAdmin.userName}`,
-      });
+    const isValid = await bcrypt.compare(password, foundAdmin.password);
 
-      //* send another email to verify the login using the emial link...
-      const msg = `<h1 style="text-align: center; color : aqua">Hello ${foundAdmin?.userName}</h1>
-      <div style="text-align: center;">
-        <p>This email is sent to verify ur login to ur account linked with this email ...</p>
-        <p>This is in the dev version , so obviously it will be much better in the future .. so be with us ❤️</p>
-        <p style="opacity: .2;"> This mail is generated one ...</p>
-        <button style="background-color: cyan; border-radius: 12px; padding :3px; font-size: 16px ; padding-left: 5px; padding-right: 5px;">
-            💕
-        </button>
-        
-      </div>`;
-
-      sendMail(email, "Verification Email", msg);
-    } else {
-      res.send({
+    if (!isValid) {
+      return res.status(400).json({
         status: 0,
-        msg: "Please check ur password ...",
+        msg: "Please check ur password ... ",
       });
     }
+
+    //* JWT PAYLOAD
+    const payload : JwtPayload = {
+      id: foundAdmin._id.toString(),
+      email: foundAdmin.email,
+      role: "admin",
+    };
+
+    //* Generate Tokens ~
+    const accessToken = generateAccessToken(payload);
+    const refreshToken = generateRefreshToken(payload);
+
+    const msg = `<h1 style="text-align: center; color : aqua">Hello ${foundAdmin.userName}</h1>
+      <div style="text-align: center;">
+        <p>Your account was logged in successfully.</p>
+        <p>If this was not you, please secure your account.</p>
+      </div>`;
+
+    sendMail(email, "Login Alert", msg);
+
+    //* Final Response ~
+    return res.status(200).json({
+      status : 1,
+      msg : `Wellcoome ${foundAdmin.userName}`,
+      accessToken : accessToken,
+      refreshToken : refreshToken,
+    })
   } catch (err: any) {
     res.status(500).json({
       msg: "There is some problem in login ...",
@@ -105,7 +112,7 @@ export const adminLogin = async (req: any, res: any) => {
 };
 
 //! Verify the email sent to the email at the time of the register ...
-export const adminMailVerification = async (req: any, res: any) => {
+export const adminMailVerification = async (req: Request, res: Response) => {
   try {
     const { id } = req.query;
     if (id == undefined || id == null) {
@@ -113,7 +120,7 @@ export const adminMailVerification = async (req: any, res: any) => {
     }
 
     // check the user ...
-    const foundAdmin = await admin.findOne({ _id: id });
+    const foundAdmin = await admin.findById(id);
     if (!foundAdmin) {
       throw new ApiError(
         "User Not Found , Please register first ...",
@@ -144,14 +151,12 @@ export const adminMailVerification = async (req: any, res: any) => {
 //!   To view all the data of any user
 export const viewAll = async (req: Request, res: Response) => {
   try {
-    const { role } = req.query;
+    const  role  = req.query.role as string | undefined;
 
     let data;
 
     if (role === "user") {
       data = await User.find().select("-password");
-    } else if (role === "seller") {
-      data = await Seller.find().select("-password");
     } else if (role === "seller") {
       data = await Seller.find().select("-password");
     } else {

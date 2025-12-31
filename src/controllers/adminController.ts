@@ -164,7 +164,10 @@ export const adminMailVerification = async (req: Request, res: Response) => {
       message: "Mail has been verified successfully ....",
     });
   } catch (err: any) {
-    throw new ApiError(err.message, 500, false);
+    return res.status(500).json({
+      status: 0,
+      msg: err.message,
+    });
   }
 };
 
@@ -197,6 +200,9 @@ export const viewAll = async (req: Request, res: Response) => {
       data,
     });
   } catch (err: any) {
-    throw new ApiError(err.message, 500, false);
+    return res.status(500).json({
+      status: 0,
+      msg: err.message,
+    });
   }
 };

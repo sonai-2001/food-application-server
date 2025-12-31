@@ -1,14 +1,11 @@
 import { ApiError } from "../utils/ApiError";
-import user from "../models/user";
 import bcrypt from "bcrypt";
 import sendMail from "../config/nodeMailer";
 import { validationResult } from "express-validator";
 import { Request, Response } from "express";
 import User from "../models/user";
-import Seller from "../models/seller";
-import Admin from "../models/admin";
 
-export const userRegister = async (req: any, res: any) => {
+export const userRegister = async (req: Request, res: Response) => {
   const errors: any = validationResult(req);
 
   if (!errors.isEmpty()) {
@@ -16,22 +13,29 @@ export const userRegister = async (req: any, res: any) => {
       .array()
       .map((e: any) => e.msg)
       .join(", ");
-    throw new ApiError(errorMessages, 400, true);
-    // console.log(errors);
+    // throw new ApiError(errorMessages, 400, true);
+    return res.status(400).json({
+      status: 0,
+      msg: errorMessages,
+    });
   }
 
   const { userName, email, password } = req.body;
   if (!email || !password) {
-    throw new ApiError("Please enter both credentials", 400, true);
+    return res.status(400).json({
+      status: 0,
+      msg: "Please enter all credentials",
+    });
   }
   const hashpass = await bcrypt.hash(password, 10);
   const userCredentials = {
-    userName: userName,
-    email: email,
+    userName,
+    email,
     password: hashpass,
+    role: "user",
   };
-  const User = new user(userCredentials);
-  await User.save();
+  const user = new User(userCredentials);
+  await user.save();
 
   const sub = `${userName} , Thanks for registering to our website ...`;
   const msg = `<h1 style="text-align: center; color : aqua">Hello ${userName}</h1>
@@ -39,7 +43,7 @@ export const userRegister = async (req: any, res: any) => {
         <p>Wellcome to our familly , hope u will like this as much we want u to do ...</p>
         <p>This is in the dev version , so obviously it will be much better in the future .. so be with us ❤️</p>
         <p style="opacity: .2;"> Please click the button to verify ur email ... </p>
-        <a href="http://127.0.0.1:3000/api/user/auth/mail-verification?id=${User?._id}">
+        <a href="http://127.0.0.1:3000/api/user/auth/mail-verification?id=${user?._id}">
             <button style="background-color: cyan; border-radius: 12px; padding :3px; font-size: 16px ; padding-left: 5px; padding-right: 5px;">
             Verify
         </button>
@@ -58,7 +62,7 @@ export const userLogin = async (req: any, res: any) => {
     if (!email || !password) {
       throw new ApiError("Please enter both credentials", 400, true);
     }
-    const foundUser = await user.findOne({ email: email });
+    const foundUser = await User.findOne({ email: email });
 
     if (!foundUser) {
       throw new ApiError("Please register first ...", 400, true);
@@ -111,7 +115,7 @@ export const userMailVerification = async (req: any, res: any) => {
     }
 
     // check the user ...
-    const foundUser = await user.findOne({ _id: id });
+    const foundUser = await User.findOne({ _id: id });
     if (!foundUser) {
       throw new ApiError(
         "User Not Found , Please register first ...",
@@ -154,7 +158,7 @@ export const sendMailVerification = async (req: any, res: any) => {
 
     const { email } = req.body;
 
-    const foundUser = await user.findOne({ email });
+    const foundUser = await User.findOne({ email });
 
     if (!foundUser) {
       return res.status(404).json({
@@ -183,4 +187,3 @@ export const sendMailVerification = async (req: any, res: any) => {
     throw new ApiError(err.message, 500, false);
   }
 };
-

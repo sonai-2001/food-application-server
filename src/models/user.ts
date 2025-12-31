@@ -60,6 +60,7 @@ const userSchema = new Schema<IUser>(
       type: String,
       enum: ["admin", "seller", "user"],
       required: true,
+      default: "user",
     },
   },
   {

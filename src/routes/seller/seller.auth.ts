@@ -1,19 +1,20 @@
 import { Router } from "express";
 import { foodValidator, sellerRegisterValidator } from "../../helpers/validation";
 import { addFood, sellerLogin, sellerMailVerification, sellerRegister } from "../../controllers/sellerController";
+import { authMiddleware } from "../../middlewares/auth.middleware";
 
 const router = Router();
 
 //!     Register Route ~
-router.get("/register", sellerRegisterValidator, sellerRegister);
+router.post("/register", sellerRegisterValidator, sellerRegister);
 
 //!     Sent the mail-verification at the time of the register ...
 router.get("/mail-verification", sellerMailVerification);
 
 //!     USER LOGIN ROUTE ~
-router.get("/login", sellerLogin);
+router.post("/login", sellerLogin);
 
 //!     ADD FOOD ITEMS ~
-router.post("/add-food", foodValidator,addFood);
+router.post("/add-food", authMiddleware, foodValidator, addFood);
 
 export default router;

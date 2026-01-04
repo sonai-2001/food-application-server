@@ -1,207 +1,168 @@
 import bcrypt from "bcrypt";
 import { validationResult } from "express-validator";
+import { Request, Response } from "express";
 import sendMail from "../config/nodeMailer";
 import { ApiError } from "../utils/ApiError";
-import seller from "../models/seller";
-import { Request, Response } from "express";
-import food from "../models/food";
-import user from "../models/user";
+import Food from "../models/food";
+import User from "../models/user";
+import { generateAccessToken, generateRefreshToken } from "../utils/jwt";
 
+//!  ================= SELLER REGISTER =================
 export const sellerRegister = async (req: Request, res: Response) => {
-  const errors: any = validationResult(req);
-
+  const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    const errorMessages = errors
-      .array()
-      .map((e: any) => e.msg)
-      .join(", ");
-    throw new ApiError(errorMessages, 400, true);
+    const msg = errors.array().map(e => e.msg).join(", ");
+    throw new ApiError(msg, 400, true);
   }
 
   const { ownerName, resturentName, email, password } = req.body;
   if (!email || !password) {
-    throw new ApiError("Please enter both credentials", 400, true);
+    throw new ApiError("Please enter all credentials", 400, true);
   }
-  const hashpass = await bcrypt.hash(password, 10);
-  const userCredentials = {
-    ownerName: ownerName,
-    resturentName: resturentName,
-    email: email,
-    password: hashpass,
-  };
-  const Seller = new seller(userCredentials);
-  await Seller.save();
 
-  const sub = `${resturentName} , Thanks for registering to our website ...`;
-  const msg = `<h1 style="text-align: center; color : aqua">Hello ${ownerName}</h1>
-    <div style="text-align: center;">
-        <p>Wellcome to our familly , hope u will like this as much we want u to do ...</p>
-        <p>This is in the dev version , so obviously it will be much better in the future .. so be with us ❤️</p>
-        <p style="opacity: .2;"> Please click the button to verify ur email ... </p>
-        <a href="http://127.0.0.1:3000/api/seller/auth/mail-verification?id=${Seller?._id}">
-            <button style="background-color: cyan; border-radius: 12px; padding :3px; font-size: 16px ; padding-left: 5px; padding-right: 5px;">
-            Verify
-        </button>
-        </a>
-    </div>`;
-  sendMail(email, sub, msg);
+  const existingSeller = await User.findOne({
+    email: email.toLowerCase(),
+    role: "seller",
+  });
+
+  if (existingSeller) {
+    return res.status(400).json({
+      status: 0,
+      msg: "Seller already exists with this email",
+    });
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  const seller = new User({
+    ownerName,
+    resturentName,
+    email: email.toLowerCase(),
+    password: hashedPassword,
+    role: "seller",
+  });
+
+  await seller.save();
+
+  const subject = `${resturentName}, Thanks for registering`;
+  const message = `
+    <h1 style="text-align:center;color:aqua">Hello ${ownerName}</h1>
+    <div style="text-align:center">
+      <p>Welcome to our family ❤️</p>
+      <p>Please verify your email</p>
+      <a href="http://127.0.0.1:3000/api/seller/auth/mail-verification?id=${seller._id}">
+        <button style="background:cyan;border-radius:12px">Verify</button>
+      </a>
+    </div>
+  `;
+
+  sendMail(email, subject, message);
 
   res.status(201).json({
-    msg: "Seller has been registered successfully , please check ur mail to validate ur email and account ...",
+    status: 1,
+    msg: "Seller registered successfully. Please verify your email",
   });
 };
 
-//!   Seller Login API ~
+//!    ================= SELLER LOGIN =================
 export const sellerLogin = async (req: Request, res: Response) => {
-  try {
-    const { email, password } = req.body;
-    if (!email || !password) {
-      throw new ApiError("Please enter both credentials", 400, true);
-    }
-    const foundSeller = await seller.findOne({ email: email });
-
-    if (!foundSeller) {
-      throw new ApiError("Please register first ...", 400, true);
-    }
-
-    //* if user found get the pass and match , then return response
-    const userPass = foundSeller.password;
-
-    //* Check the pass ~
-    //using the hashed pass so compare it ...
-    const isValid = await bcrypt.compare(password, userPass);
-    if (isValid) {
-      res.status(200).json({
-        msg: `Wellcome ${foundSeller.resturentName}`,
-      });
-
-      //* send another email to verify the login using the emial link...
-      const msg = `<h1 style="text-align: center; color : aqua">Hello ${foundSeller?.ownerName}</h1>
-      <div style="text-align: center;">
-        <p>This email is sent to verify ur login to ur account linked with this email ...</p>
-        <p>This is in the dev version , so obviously it will be much better in the future .. so be with us ❤️</p>
-        <p style="opacity: .2;"> This mail is generated one ...</p>
-        <button style="background-color: cyan; border-radius: 12px; padding :3px; font-size: 16px ; padding-left: 5px; padding-right: 5px;">
-            💕
-        </button>
-        
-      </div>`;
-
-      sendMail(email, "Verification Email", msg);
-    } else {
-      res.send({
-        status: 0,
-        msg: "Please check ur password ...",
-      });
-    }
-  } catch (err: any) {
-    res.status(500).json({
-      msg: "There is some problem in login ...",
-      error: err.message,
-    });
-  }
-};
-
-//! Verify the email sent to the email at the time of the register ...
-export const sellerMailVerification = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.query;
-    if (id == undefined || id == null) {
-      throw new ApiError("Not found ...", 404, true);
-    }
-
-    // check the user ...
-    const foundSeller = await seller.findOne({ _id: id });
-    if (!foundSeller) {
-      throw new ApiError(
-        "Seller Not Found , Please register first ...",
-        404,
-        true
-      );
-    }
-
-    //user is already verified ...
-    if (foundSeller.isVerified) {
-      return res.send({
-        message: "Your mail has been already verified ...",
-      });
-    }
-
-    // user found then show verified and save ...
-    foundSeller.isVerified = true;
-    await foundSeller.save();
-    return res.send({
-      message: "Mail has been verified successfully ....",
-    });
-  } catch (err: any) {
-    console.log(err.message);
-    throw new ApiError(err.message, 500, false);
-  }
-};
-
-//!     ADD FOOD API ~
-export const addFood = async (req: Request, res: Response) => {
-  const errors: any = validationResult(req);
-
-  if (!errors.isEmpty()) {
-    const errorMessages = errors
-      .array()
-      .map((e: any) => e.msg)
-      .join(", ");
-    throw new ApiError(errorMessages, 400, true);
-  }
-  const { email, password, foodName, price } = req.body;
+  const { email, password } = req.body;
   if (!email || !password) {
     throw new ApiError("Please enter both credentials", 400, true);
   }
-  const foundSeller = await seller.findOne({ email: email });
 
-  if (!foundSeller) {
-    const foundUser = await user.findOne({ email });
-    if (foundUser)
-      throw new ApiError(
-        "As u are a user You need to be a seller to add a food item",
-        401,
-        true
-      );
-    else {
-      throw new ApiError("Please register first as a seller ...", 400, true);
-    }
+  const seller = await User.findOne({
+    email: email.toLowerCase(),
+    role: "seller",
+  });
+
+  if (!seller) {
+    throw new ApiError("Seller not found", 404, true);
   }
 
-  //* if user found get the pass and match , then return response
-  const userPass = foundSeller.password;
+  const isValid = await bcrypt.compare(password, seller.password);
+  if (!isValid) {
+    throw new ApiError("Invalid credentials", 401, true);
+  }
 
-  //* Check the pass ~
-  //using the hashed pass so compare it ...
-  const isValid = await bcrypt.compare(password, userPass);
+  const payload = {
+    id: seller._id.toString(),
+    email: seller.email,
+    role: seller.role,
+  };
 
-  if (isValid) {
-    //* only off for the testing purpose only ...
-    // if (!foundSeller.isVerified) {
-    //   throw new ApiError(
-    //     "Please verify urself first to add the food item ...",
-    //     401,
-    //     true
-    //   );
-    // }
+  const accessToken = generateAccessToken(payload);
+  const refreshToken = generateRefreshToken(payload);
 
-    if (!foodName || !price) {
-      throw new ApiError(
-        "Please enter the Food Name and the Price also ..",
-        400,
-        true
-      );
-    }
-    const resturentName = foundSeller.resturentName;
-    const Food = new food({ foodName, price, resturentName });
-    await Food.save();
+  res.status(200).json({
+    status: 1,
+    msg: `Welcome ${seller.resturentName}`,
+    accessToken : accessToken,
+    refreshToken : refreshToken,
+  });
+};
 
-    res.send({
-      status: 1,
-      msg: "The food item has been saved successfully ...",
+//!    ================= SELLER MAIL VERIFICATION =================
+export const sellerMailVerification = async (req: Request, res: Response) => {
+  const { id } = req.query;
+  if (!id) {
+    throw new ApiError("Invalid verification link", 400, true);
+  }
+
+  const seller = await User.findById(id);
+  if (!seller || seller.role !== "seller") {
+    throw new ApiError("Seller not found", 404, true);
+  }
+
+  if (seller.isVerified) {
+    return res.json({
+      msg: "Email already verified",
     });
-  } else {
-    throw new ApiError("Please check ur credentials ...", 404, true);
   }
+
+  seller.isVerified = true;
+  await seller.save();
+
+  res.json({
+    msg: "Email verified successfully",
+  });
+};
+
+//!    ================= ADD FOOD =================
+export const addFood = async (req: Request, res: Response) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    const msg = errors.array().map(e => e.msg).join(", ");
+    throw new ApiError(msg, 400, true);
+  }
+
+  const sellerId = req.user?.id;
+
+  if (!sellerId || req.user?.role !== "seller") {
+    throw new ApiError("Only sellers can add food", 403, true);
+  }
+
+  const seller = await User.findById(sellerId);
+  if (!seller) {
+    throw new ApiError("Seller not found", 404, true);
+  }
+
+  const { foodName, price } = req.body;
+
+  if (!foodName || !price) {
+    throw new ApiError("Food name and price are required", 400, true);
+  }
+
+  const food = new Food({
+    foodName,
+    price,
+    resturentName: seller.resturentName,
+  });
+
+  await food.save();
+
+  res.status(201).json({
+    status: 1,
+    msg: "Food item added successfully",
+  });
 };

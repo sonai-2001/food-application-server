@@ -1,32 +1,72 @@
-import mongoose from "mongoose";
+import mongoose, { Document, Schema, Types } from "mongoose";
 
-//* Creating a userSchema ~
+//* tell the ts , what a use document will look like ...
+export interface IUser extends Document {
+  _id: Types.ObjectId;
+  userName?: string;
+  ownerName?: string;
+  resturentName?: string;
+  email: string;
+  password: string;
+  isVerified: boolean;
+  role: "admin" | "seller" | "user";
+}
 
-const userSchema = new mongoose.Schema({
-  userName: {
-    type: String,
-    required: true,
-    unique: true,
-  },
-  email: {
-    type: String,
-    required: true,
-    match: [/\S+@\S+\.\S+/, "Please enter a valid email address"],
-  },
-  password: {
-    type: String,
-    required: true,
-  },
-  isVerified: {
-    type: Boolean,
-    default: false,
-  },
-  role: {
-    type: String,
-    default: "User",
-  },
-});
+const userSchema = new Schema<IUser>(
+  {
+    userName: {
+      type: String,
+      required: function (this: IUser): boolean {
+        return this.role !== "seller";
+      },
+      unique: true,
+      sparse: true,
+    },
 
-//* saving the schema ~
-const User = mongoose.model("User", userSchema);
+    ownerName: {
+      type: String,
+      required: function (this: IUser): boolean {
+        return this.role === "seller";
+      },
+      unique: true,
+      sparse: true,
+    },
+
+    resturentName: {
+      type: String,
+      required: function (this: IUser): boolean {
+        return this.role === "seller";
+      },
+    },
+
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      match: [/\S+@\S+\.\S+/, "Please enter a valid email address"],
+    },
+
+    password: {
+      type: String,
+      required: true,
+    },
+
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+
+    role: {
+      type: String,
+      enum: ["admin", "seller", "user"],
+      required: true,
+      default: "user",
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+const User = mongoose.model<IUser>("User", userSchema);
 export default User;

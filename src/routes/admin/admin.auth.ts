@@ -4,7 +4,6 @@ import {
   sendMailVerificator,
 } from "./../../helpers/validation";
 import { Router } from "express";
-import admin from "../../models/admin";
 import { sendMailVerification } from "../../controllers/userController";
 import {
   adminLogin,
@@ -12,8 +11,7 @@ import {
   adminRegister,
   viewAll,
 } from "../../controllers/adminController";
-import user from "../../models/user";
-import seller from "../../models/seller";
+import User from "../../models/user";
 import food from "../../models/food";
 import { authMiddleware } from "../../middlewares/auth.middleware";
 
@@ -32,9 +30,9 @@ router.post("/login",requestvalidator ,adminLogin);
 
 //! CLEAR ALL THE ENTRY API ~
 router.delete("/delAll", async (req: any, res: any) => {
-  const delResAdmin = await admin.deleteMany();
-  const delResUser = await user.deleteMany();
-  const delResSeller = await seller.deleteMany();
+  const delResAdmin = await User.deleteMany();
+  const delResUser = await User.deleteMany();
+  const delResSeller = await User.deleteMany();
   const delResFood = await food.deleteMany();
 
   res.send({

@@ -2,41 +2,45 @@ import bcrypt from "bcrypt";
 import sendMail from "../config/nodeMailer";
 import { ApiError } from "../utils/ApiError";
 import { validationResult } from "express-validator";
-import admin from "../models/admin";
 import User from "../models/user";
 import { Request, Response } from "express";
-import Seller from "../models/seller";
-import Admin from "../models/admin";
-import { generateAccessToken, generateRefreshToken, JwtPayload } from "../utils/jwt";
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  JwtPayload,
+} from "../utils/jwt";
+import Food from "../models/food";
 
 //!     REGISTER API ~
 export const adminRegister = async (req: Request, res: Response) => {
-  const errors: any = validationResult(req);
+  try {
+    const errors: any = validationResult(req);
 
-  if (!errors.isEmpty()) {
-    const errorMessages = errors
-      .array()
-      .map((e: any) => e.msg)
-      .join(", ");
-    throw new ApiError(errorMessages, 400, true);
-    // console.log(errors);
-  }
+    if (!errors.isEmpty()) {
+      const errorMessages = errors
+        .array()
+        .map((e: any) => e.msg)
+        .join(", ");
+      throw new ApiError(errorMessages, 400, true);
+      // console.log(errors);
+    }
 
-  const { userName, email, password } = req.body;
-  if (!email || !password) {
-    throw new ApiError("Please enter both credentials", 400, true);
-  }
-  const hashpass = await bcrypt.hash(password, 10);
-  const userCredentials = {
-    userName: userName,
-    email: email,
-    password: hashpass,
-  };
-  const newAdmin = new admin(userCredentials);
-  await newAdmin.save();
+    const { userName, email, password } = req.body;
+    if (!email || !password || !userName) {
+      throw new ApiError("Please enter both credentials", 400, true);
+    }
+    const hashpass = await bcrypt.hash(password, 10);
+    const userCredentials = {
+      userName: userName,
+      email: email.toLowerCase(),
+      password: hashpass,
+      role: "admin",
+    };
+    const newAdmin = new User(userCredentials);
+    await newAdmin.save();
 
-  const sub = `${userName} , Admin wellcome to our website ...`;
-  const msg = `<h1 style="text-align: center; color : aqua">Hello ${userName}</h1>
+    const sub = `${userName} , Admin wellcome to our website ...`;
+    const msg = `<h1 style="text-align: center; color : aqua">Hello ${userName}</h1>
     <div style="text-align: center;">
         <p>Wellcome to our familly , hope u will like this as much we want u to do ...</p>
         <p>This is in the dev version , so obviously it will be much better in the future .. so be with us ❤️</p>
@@ -47,11 +51,18 @@ export const adminRegister = async (req: Request, res: Response) => {
         </button>
         </a>
     </div>`;
-  sendMail(email, sub, msg);
+    sendMail(email, sub, msg);
 
-  res.status(201).json({
-    msg: "Admin has been registered successfully ...",
-  });
+    res.status(201).json({
+      msg: "Admin has been registered successfully ...",
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      status: 0,
+      msg: "There is some problem in admin registration ... ",
+      error: err.message,
+    });
+  }
 };
 
 //!     Login Api ~
@@ -61,7 +72,10 @@ export const adminLogin = async (req: Request, res: Response) => {
     if (!email || !password) {
       throw new ApiError("Please enter both credentials", 400, true);
     }
-    const foundAdmin = await admin.findOne({ email: email });
+    const foundAdmin = await User.findOne({
+      email: email.toLowerCase(),
+      role: "admin",
+    });
 
     if (!foundAdmin) {
       throw new ApiError("Please register first ...", 400, true);
@@ -78,7 +92,7 @@ export const adminLogin = async (req: Request, res: Response) => {
     }
 
     //* JWT PAYLOAD
-    const payload : JwtPayload = {
+    const payload: JwtPayload = {
       id: foundAdmin._id.toString(),
       email: foundAdmin.email,
       role: "admin",
@@ -98,11 +112,11 @@ export const adminLogin = async (req: Request, res: Response) => {
 
     //* Final Response ~
     return res.status(200).json({
-      status : 1,
-      msg : `Wellcoome ${foundAdmin.userName}`,
-      accessToken : accessToken,
-      refreshToken : refreshToken,
-    })
+      status: 1,
+      msg: `Wellcoome ${foundAdmin.userName}`,
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+    });
   } catch (err: any) {
     res.status(500).json({
       msg: "There is some problem in login ...",
@@ -115,12 +129,19 @@ export const adminLogin = async (req: Request, res: Response) => {
 export const adminMailVerification = async (req: Request, res: Response) => {
   try {
     const { id } = req.query;
-    if (id == undefined || id == null) {
-      throw new ApiError("Not found ...", 404, true);
+    if (!id || typeof id !== "string") {
+      return res.status(400).json({
+        status: 0,
+        msg: "Invalid or missing verification id",
+      });
     }
 
     // check the user ...
-    const foundAdmin = await admin.findById(id);
+    const foundAdmin = await User.findOne({
+      _id: id,
+      role: "admin",
+    });
+
     if (!foundAdmin) {
       throw new ApiError(
         "User Not Found , Please register first ...",
@@ -129,7 +150,7 @@ export const adminMailVerification = async (req: Request, res: Response) => {
       );
     }
 
-    //user is already verified ...
+    //if user is already verified ...
     if (foundAdmin.isVerified) {
       return res.send({
         message: "Your mail has been already verified ...",
@@ -139,12 +160,15 @@ export const adminMailVerification = async (req: Request, res: Response) => {
     // user found then show verified and save ...
     foundAdmin.isVerified = true;
     await foundAdmin.save();
-    return res.send({
+    return res.status(200).json({
+      status: 1,
       message: "Mail has been verified successfully ....",
     });
   } catch (err: any) {
-    console.log(err.message);
-    throw new ApiError(err.message, 500, false);
+    return res.status(500).json({
+      status: 0,
+      msg: err.message,
+    });
   }
 };
 
@@ -160,25 +184,29 @@ export const viewAll = async (req: Request, res: Response) => {
     const role = req.query.role as string | undefined;
 
     let data;
+    const food = await Food.find();
+
 
     if (role === "user") {
-      data = await User.find().select("-password");
+      data = await User.find({ role: "user" }).select("-password");
     } else if (role === "seller") {
-      data = await Seller.find().select("-password");
+      data = await User.find({ role: "seller" }).select("-password");
+    } else if (role === "admin") {
+      data = await User.find({ role: "admin" }).select("-password");
     } else {
-      data = {
-        admin: await Admin.find().select("-password"),
-        users: await User.find().select("-password"),
-        sellers: await Seller.find().select("-password"),
-      };
+      data = await User.find().select("-password");
     }
 
     return res.status(200).json({
       status: 1,
       msg: "Data fetched successfully",
       data,
+      food : food,
     });
   } catch (err: any) {
-    throw new ApiError(err.message, 500, false);
+    return res.status(500).json({
+      status: 0,
+      msg: err.message,
+    });
   }
 };

@@ -9,6 +9,7 @@ import {
   generateRefreshToken,
   JwtPayload,
 } from "../utils/jwt";
+import Food from "../models/food";
 
 //!     REGISTER API ~
 export const adminRegister = async (req: Request, res: Response) => {
@@ -183,6 +184,8 @@ export const viewAll = async (req: Request, res: Response) => {
     const role = req.query.role as string | undefined;
 
     let data;
+    const food = await Food.find();
+
 
     if (role === "user") {
       data = await User.find({ role: "user" }).select("-password");
@@ -198,6 +201,7 @@ export const viewAll = async (req: Request, res: Response) => {
       status: 1,
       msg: "Data fetched successfully",
       data,
+      food : food,
     });
   } catch (err: any) {
     return res.status(500).json({

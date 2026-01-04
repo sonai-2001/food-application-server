@@ -10,6 +10,7 @@ export interface IUser extends Document {
   password: string;
   isVerified: boolean;
   role: "admin" | "seller" | "user";
+  status: "active" | "inActive" | "pending" | "isDeleted";
 }
 
 const userSchema = new Schema<IUser>(
@@ -61,6 +62,14 @@ const userSchema = new Schema<IUser>(
       enum: ["admin", "seller", "user"],
       required: true,
       default: "user",
+    },
+    status: {
+      type: String,
+      enum: ["active", "inActive", "pending", "isDeleted"],
+      required: true,
+      default: function (this: IUser) {
+        return this.role === "seller" ? "pending" : "active";
+      },
     },
   },
   {

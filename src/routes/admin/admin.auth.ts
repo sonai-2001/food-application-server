@@ -12,6 +12,7 @@ import {
   viewAll,
   approveSeller,
   deleteSellerByAdmin,
+  restoreSellerByAdmin,
 } from "../../controllers/adminController";
 import User from "../../models/user";
 import food from "../../models/food";
@@ -62,6 +63,13 @@ router.patch(
   "/seller/:sellerId/delete",
   authMiddleware,
   deleteSellerByAdmin
+);
+
+//!   Restore Seller (Admin)
+router.patch(
+  "/seller/:sellerId/restore",
+  authMiddleware,
+  restoreSellerByAdmin
 );
 
 //!   Mail-verificaion at the time of register ...

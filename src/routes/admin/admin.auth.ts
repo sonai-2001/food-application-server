@@ -10,6 +10,7 @@ import {
   adminMailVerification,
   adminRegister,
   viewAll,
+  approveSeller,
 } from "../../controllers/adminController";
 import User from "../../models/user";
 import food from "../../models/food";
@@ -47,6 +48,13 @@ router.delete("/delAll", async (req: any, res: any) => {
 
 //!   View All Entrys ...
 router.get("/view",authMiddleware,viewAll);
+
+//!   Approve Seller (Admin Only)
+router.patch(
+  "/seller/:sellerId/approve",
+  authMiddleware,
+  approveSeller
+);
 
 //!   Mail-verificaion at the time of register ...
 router.get("/mail-verification", adminMailVerification);

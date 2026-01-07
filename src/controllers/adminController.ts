@@ -172,6 +172,58 @@ export const adminMailVerification = async (req: Request, res: Response) => {
   }
 };
 
+//!   Approve Seller (Admin Only)
+export const approveSeller = async (req: Request, res: Response) => {
+  try {
+    //* Admin-only check
+    if (req.user?.role !== "admin") {
+      return res.status(403).json({
+        status: 0,
+        msg: "Admins only",
+      });
+    }
+
+    const { sellerId } = req.params;
+
+    if (!sellerId) {
+      return res.status(400).json({
+        status: 0,
+        msg: "Seller ID is required",
+      });
+    }
+
+    //* Find pending seller
+    const seller = await User.findOne({
+      _id: sellerId,
+      role: "seller",
+      status: "pending",
+    });
+
+    if (!seller) {
+      return res.status(404).json({
+        status: 0,
+        msg: "Pending seller not found",
+      });
+    }
+
+    //* Approve seller
+    seller.status = "active";
+    await seller.save();
+
+    return res.status(200).json({
+      status: 1,
+      msg: "Seller approved successfully",
+      sellerId: seller._id,
+      sellerName: seller.ownerName,
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      status: 0,
+      msg: err.message,
+    });
+  }
+};
+
 //!   To view all the data of any user
 export const viewAll = async (req: Request, res: Response) => {
   try {
@@ -182,26 +234,34 @@ export const viewAll = async (req: Request, res: Response) => {
       });
     }
     const role = req.query.role as string | undefined;
+    const status = req.query.status as string | undefined;
 
     let data;
     const food = await Food.find();
 
-
     if (role === "user") {
       data = await User.find({ role: "user" }).select("-password");
     } else if (role === "seller") {
-      data = await User.find({ role: "seller" }).select("-password");
+      const query: any = { role: "seller" };
+
+      //* hide soft-deleted sellers by default
+      if (status) {
+        query.status = status;
+      } else {
+        query.status = { $ne: "isDeleted" };
+      }
+
+      data = await User.find(query).select("-password");
     } else if (role === "admin") {
       data = await User.find({ role: "admin" }).select("-password");
     } else {
-      data = await User.find().select("-password");
+      data = { user: await User.find().select("-password"), food: food };
     }
 
     return res.status(200).json({
       status: 1,
       msg: "Data fetched successfully",
       data,
-      food : food,
     });
   } catch (err: any) {
     return res.status(500).json({

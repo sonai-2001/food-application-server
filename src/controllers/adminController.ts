@@ -284,12 +284,22 @@ export const viewAll = async (req: Request, res: Response) => {
     }
     const role = req.query.role as string | undefined;
     const status = req.query.status as string | undefined;
+    
+    //* PAGINATION PARAMETERS
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
 
     let data;
+    let totalDocs = 0;
     const food = await Food.find();
 
     if (role === "user") {
-      data = await User.find({ role: "user" }).select("-password");
+      totalDocs = await User.countDocuments({ role: "user" });
+      data = await User.find({ role: "user" })
+        .select("-password")
+        .skip(skip)
+        .limit(limit);
     } else if (role === "seller") {
       const query: any = { role: "seller" };
 
@@ -300,17 +310,60 @@ export const viewAll = async (req: Request, res: Response) => {
         query.status = { $ne: "isDeleted" };
       }
 
-      data = await User.find(query).select("-password");
+      totalDocs = await User.countDocuments(query);
+      data = await User.find(query)
+        .select("-password")
+        .skip(skip)
+        .limit(limit);
     } else if (role === "admin") {
-      data = await User.find({ role: "admin" }).select("-password");
+      totalDocs = await User.countDocuments({ role: "admin" });
+      data = await User.find({ role: "admin" })
+        .select("-password")
+        .skip(skip)
+        .limit(limit);
     } else {
-      data = { user: await User.find().select("-password"), food: food };
+      // For "all" case, we'll paginate users only, not food
+      totalDocs = await User.countDocuments();
+      data = { 
+        user: await User.find()
+          .select("-password")
+          .skip(skip)
+          .limit(limit), 
+        food: food 
+      };
     }
+
+    //* CALCULATE PAGINATION METADATA
+    const totalPages = Math.ceil(totalDocs / limit);
+    
+    //* VALIDATE PAGE NUMBER
+    if (page > totalPages && totalDocs > 0) {
+      throw new ApiError(
+        `Page ${page} does not exist. Total pages available: ${totalPages}`,
+        404,
+        true
+      );
+    }
+    
+    const hasNext = page < totalPages;
+    const hasPrev = page > 1;
+
+    //* METADATA OBJECT
+    const metadata = {
+      paginationContent: {
+        currentPage: page,
+        totalPages: totalPages,
+      },
+      hasNext: hasNext,
+      hasPrev: hasPrev,
+      totalDocs: totalDocs,
+    };
 
     return res.status(200).json({
       status: 1,
       msg: "Data fetched successfully",
       data,
+      metadata,
     });
   } catch (err: any) {
     return res.status(500).json({

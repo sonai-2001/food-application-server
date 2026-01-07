@@ -80,6 +80,19 @@ export const sellerLogin = async (req: Request, res: Response) => {
     throw new ApiError("Seller not found", 404, true);
   }
 
+  //* Allow login only for active sellers
+  if (seller.status !== "active") {
+    throw new ApiError(
+      seller.status === "pending"
+        ? "Seller approval pending"
+        : seller.status === "isDeleted"
+        ? "Seller account has been deleted"
+        : "Seller account is inactive",
+      403,
+      true
+    );
+  }
+
   const isValid = await bcrypt.compare(password, seller.password);
   if (!isValid) {
     throw new ApiError("Invalid credentials", 401, true);
@@ -145,6 +158,17 @@ export const addFood = async (req: Request, res: Response) => {
   const seller = await User.findById(sellerId);
   if (!seller) {
     throw new ApiError("Seller not found", 404, true);
+  }
+
+  //* Only active sellers are allowed to add food
+  if (seller.status !== "active") {
+    throw new ApiError(
+      seller.status === "pending"
+        ? "Seller approval pending"
+        : "Seller account is not active",
+      403,
+      true
+    );
   }
 
   const { foodName, price } = req.body;

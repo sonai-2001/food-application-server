@@ -65,6 +65,55 @@ export const adminRegister = async (req: Request, res: Response) => {
   }
 };
 
+//!    ================= ADMIN SOFT DELETE SELLER =================
+export const deleteSellerByAdmin = async (req: Request, res: Response) => {
+  try {
+    //* Admin-only check
+    if (req.user?.role !== "admin") {
+      return res.status(403).json({
+        status: 0,
+        msg: "Admins only",
+      });
+    }
+
+    const { sellerId } = req.params;
+
+    if (!sellerId) {
+      return res.status(400).json({
+        status: 0,
+        msg: "Seller ID is required",
+      });
+    }
+
+    const seller = await User.findOne({
+      _id: sellerId,
+      role: "seller",
+    });
+
+    if (!seller) {
+      return res.status(404).json({
+        status: 0,
+        msg: "Seller not found",
+      });
+    }
+
+    //* Soft delete seller
+    seller.status = "isDeleted";
+    await seller.save();
+
+    return res.status(200).json({
+      status: 1,
+      msg: "Seller deleted successfully by admin",
+      sellerId: seller._id,
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      status: 0,
+      msg: err.message,
+    });
+  }
+};
+
 //!     Login Api ~
 export const adminLogin = async (req: Request, res: Response) => {
   try {

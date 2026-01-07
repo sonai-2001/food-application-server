@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { foodValidator, sellerRegisterValidator } from "../../helpers/validation";
-import { addFood, sellerLogin, sellerMailVerification, sellerRegister } from "../../controllers/sellerController";
+import { addFood, sellerLogin, sellerMailVerification, sellerRegister, deleteSellerSelf } from "../../controllers/sellerController";
 import { authMiddleware } from "../../middlewares/auth.middleware";
 
 const router = Router();
@@ -16,5 +16,8 @@ router.post("/login", sellerLogin);
 
 //!     ADD FOOD ITEMS ~
 router.post("/add-food", authMiddleware, foodValidator, addFood);
+
+//!     SELLER SELF SOFT DELETE ~
+router.patch("/delete", authMiddleware, deleteSellerSelf);
 
 export default router;

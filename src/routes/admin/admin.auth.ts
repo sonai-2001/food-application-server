@@ -11,6 +11,7 @@ import {
   adminRegister,
   viewAll,
   approveSeller,
+  deleteSellerByAdmin,
 } from "../../controllers/adminController";
 import User from "../../models/user";
 import food from "../../models/food";
@@ -54,6 +55,13 @@ router.patch(
   "/seller/:sellerId/approve",
   authMiddleware,
   approveSeller
+);
+
+//!   Delete Seller (Admin Soft Delete)
+router.patch(
+  "/seller/:sellerId/delete",
+  authMiddleware,
+  deleteSellerByAdmin
 );
 
 //!   Mail-verificaion at the time of register ...

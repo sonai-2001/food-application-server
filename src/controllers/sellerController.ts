@@ -190,3 +190,26 @@ export const addFood = async (req: Request, res: Response) => {
     msg: "Food item added successfully",
   });
 };
+
+//!    ================= SELLER SOFT DELETE (SELF) =================
+export const deleteSellerSelf = async (req: Request, res: Response) => {
+  const sellerId = req.user?.id;
+
+  if (!sellerId || req.user?.role !== "seller") {
+    throw new ApiError("Only sellers can delete their account", 403, true);
+  }
+
+  const seller = await User.findById(sellerId);
+  if (!seller) {
+    throw new ApiError("Seller not found", 404, true);
+  }
+
+  //* Soft delete seller
+  seller.status = "isDeleted";
+  await seller.save();
+
+  res.status(200).json({
+    status: 1,
+    msg: "Seller account deleted successfully",
+  });
+};
